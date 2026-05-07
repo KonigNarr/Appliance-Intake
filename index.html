@@ -82,6 +82,38 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:1.125rem 0}
 .sum-v{color:#0f172a;font-weight:500;flex:1;word-break:break-word}
 .sum-v.danger{color:#b91c1c}
 
+/* Saved Forms */
+.btn-saved{background:#fffbeb;color:#92400e;border-color:#fcd34d}
+.btn-saved:hover{background:#fef3c7}
+.btn-save-form{background:#0f1f45;color:#fff;border-color:transparent;padding:10px 24px;font-size:15px;border-radius:9px;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s}
+.btn-save-form:hover{background:#1e3a8a}
+.btn-save-form:disabled{opacity:.4;cursor:default}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+.overlay-panel{background:#fff;border-radius:16px;width:100%;max-width:780px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.overlay-head{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;flex-shrink:0}
+.overlay-head h2{font-size:18px;font-weight:700;color:#0f172a}
+.overlay-body{padding:1.25rem 1.5rem;overflow-y:auto;flex:1}
+.btn-close{background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;line-height:1;padding:4px}
+.btn-close:hover{color:#0f172a}
+
+.search-box{width:100%;padding:10px 14px;border-radius:10px;border:1px solid #cbd5e1;font-size:14px;font-family:inherit;margin-bottom:1rem}
+.search-box:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+
+.form-card{border:1px solid #e2e8f0;border-radius:10px;padding:1rem;margin-bottom:.625rem;cursor:pointer;transition:all .12s}
+.form-card:hover{border-color:#3b82f6;background:#f8faff}
+.form-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.form-card-ref{font-family:'Courier New',monospace;font-size:12px;color:#64748b;font-weight:600}
+.form-card-date{font-size:12px;color:#94a3b8}
+.form-card-name{font-size:15px;font-weight:600;color:#0f172a}
+.form-card-sub{font-size:13px;color:#64748b;margin-top:2px}
+.form-card-del{background:none;border:none;color:#cbd5e1;font-size:16px;cursor:pointer;padding:4px 6px;border-radius:5px;line-height:1;flex-shrink:0}
+.form-card-del:hover{color:#ef4444;background:#fef2f2}
+.no-forms{text-align:center;color:#94a3b8;padding:3rem 0;font-size:15px}
+
+.detail-back{background:none;border:none;color:#3b82f6;font-size:14px;cursor:pointer;font-family:inherit;padding:0;margin-bottom:1rem;font-weight:500}
+.detail-back:hover{text-decoration:underline}
+
 @media(max-width:520px){.g2,.g3{grid-template-columns:1fr}}
 @media print{
   body{background:#fff;padding:0}
@@ -99,7 +131,21 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:1.125rem 0}
       <div class="hdr-title">🔧 Appliance Repair — Intake Form</div>
       <div class="hdr-sub">Complete all sections during customer call</div>
     </div>
-    <div class="ref" id="refEl">REF —</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn btn-saved" onclick="showSavedForms()" style="padding:6px 12px;font-size:13px">📋 Saved Forms</button>
+      <div class="ref" id="refEl">REF —</div>
+    </div>
+  </div>
+
+  <!-- Saved Forms Overlay -->
+  <div class="overlay" id="overlay" style="display:none" onclick="if(event.target===this)closeSavedForms()">
+    <div class="overlay-panel">
+      <div class="overlay-head">
+        <h2 id="overlayTitle">📋 Saved Forms</h2>
+        <button class="btn-close" onclick="closeSavedForms()">✕</button>
+      </div>
+      <div class="overlay-body" id="overlayBody"></div>
+    </div>
   </div>
   <div class="prog" id="prog"></div>
   <div id="banner"></div>
@@ -108,6 +154,7 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:1.125rem 0}
     <span class="nav-info" id="navInfo"></span>
     <div class="nav-r">
       <button class="btn" id="btnBack" onclick="back()">← Back</button>
+      <button class="btn" onclick="newForm()" title="Start a new intake form">＋ New Form</button>
       <button class="btn btn-p" id="btnNext" onclick="next()">Continue →</button>
     </div>
   </div>
@@ -851,7 +898,10 @@ function renderSummary() {
     <div class="card" id="printArea">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
         <div><div class="card-tag">Complete</div><div class="card-h">Intake Summary</div></div>
-        <button class="btn btn-print" onclick="window.print()">🖨️ Print</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-print" onclick="window.print()">🖨️ Print</button>
+          <button class="btn-save-form" id="btnSave" onclick="saveForm()">💾 Save Form</button>
+        </div>
       </div>
 
       <div class="sum-section">
@@ -959,6 +1009,197 @@ function renderAll() {
   const nxt = document.getElementById('btnNext');
   nxt.disabled = S.step === TOTAL - 1;
   nxt.textContent = S.step === TOTAL - 2 ? 'Complete Intake →' : 'Continue →';
+}
+
+// ─── SAVE & LOAD ─────────────────────────────────────────────────────────────
+
+function saveForm() {
+  const btn = document.getElementById('btnSave');
+  const forms = JSON.parse(localStorage.getItem('intake_forms') || '[]');
+  // Check if this ref already saved — update instead of duplicate
+  const existingIdx = forms.findIndex(f => f.ref === (S.ans.call_ref || S.ref));
+  const record = {
+    id: existingIdx >= 0 ? forms[existingIdx].id : Date.now(),
+    savedAt: new Date().toISOString(),
+    ref: S.ans.call_ref || S.ref,
+    custName: [S.ans.cust_first, S.ans.cust_last].filter(Boolean).join(' ') || 'Unknown',
+    custPhone: S.ans.cust_phone || '',
+    appliance: S.ans.appliance_type || '',
+    apptDate: S.ans.appt_date || '',
+    data: {...S.ans},
+  };
+  if (existingIdx >= 0) forms[existingIdx] = record;
+  else forms.unshift(record);
+  localStorage.setItem('intake_forms', JSON.stringify(forms));
+  if (btn) { btn.textContent = '✓ Saved!'; btn.disabled = true; }
+}
+
+function newForm() {
+  if (!confirm('Start a new blank intake form? Current unsaved data will be lost.')) return;
+  S.step = 0;
+  S.ans = {};
+  S.safetyFlagged = false;
+  S.ref = 'REF-' + String(Date.now()).slice(-6);
+  S.ans.call_ref = S.ref;
+  renderAll();
+}
+
+// ─── SAVED FORMS OVERLAY ─────────────────────────────────────────────────────
+
+let searchQuery = '';
+
+function showSavedForms() {
+  searchQuery = '';
+  document.getElementById('overlayTitle').textContent = '📋 Saved Forms';
+  document.getElementById('overlay').style.display = 'flex';
+  renderSavedList();
+}
+
+function closeSavedForms() {
+  document.getElementById('overlay').style.display = 'none';
+}
+
+function renderSavedList() {
+  document.getElementById('overlayTitle').textContent = '📋 Saved Forms';
+  const forms = JSON.parse(localStorage.getItem('intake_forms') || '[]');
+  const q = searchQuery.toLowerCase().trim();
+  const filtered = q ? forms.filter(f =>
+    (f.ref || '').toLowerCase().includes(q) ||
+    (f.custName || '').toLowerCase().includes(q) ||
+    (f.custPhone || '').toLowerCase().includes(q) ||
+    (f.appliance || '').toLowerCase().includes(q) ||
+    (f.apptDate || '').toLowerCase().includes(q) ||
+    (f.data && f.data.main_issue && f.data.main_issue.toLowerCase().includes(q))
+  ) : forms;
+
+  let html = `<input class="search-box" type="text" placeholder="🔍 Search by name, phone, appliance, reference, date…" value="${esc(searchQuery)}" oninput="searchQuery=this.value;renderSavedList()" id="searchInput">`;
+
+  if (forms.length === 0) {
+    html += `<div class="no-forms">No saved forms yet.<br><span style="font-size:13px">Complete an intake and click <strong>💾 Save Form</strong>.</span></div>`;
+  } else if (filtered.length === 0) {
+    html += `<div class="no-forms">No forms match "<strong>${esc(searchQuery)}</strong>"</div>`;
+  } else {
+    html += `<div style="font-size:12px;color:#94a3b8;margin-bottom:.75rem">${filtered.length} of ${forms.length} form${forms.length!==1?'s':''}</div>`;
+    filtered.forEach(f => {
+      const d = f.apptDate ? new Date(f.apptDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+      const saved = new Date(f.id).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      html += `
+        <div class="form-card" onclick="viewSavedForm(${f.id})">
+          <div class="form-card-top">
+            <span class="form-card-ref">${esc(f.ref)}</span>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span class="form-card-date">Saved ${saved}</span>
+              <button class="form-card-del" onclick="event.stopPropagation();deleteForm(${f.id})" title="Delete">🗑</button>
+            </div>
+          </div>
+          <div class="form-card-name">${esc(f.custName || 'Unknown Customer')}</div>
+          <div class="form-card-sub">
+            ${esc(f.custPhone || '')}${f.custPhone && f.appliance ? ' · ' : ''}${esc(f.appliance || '')}${d ? ' · Appt: '+d : ''}
+          </div>
+        </div>`;
+    });
+  }
+
+  document.getElementById('overlayBody').innerHTML = html;
+  // Restore focus to search box without losing scroll
+  const inp = document.getElementById('searchInput');
+  if (inp && document.activeElement !== inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+}
+
+function viewSavedForm(id) {
+  const forms = JSON.parse(localStorage.getItem('intake_forms') || '[]');
+  const form = forms.find(f => f.id === id);
+  if (!form) return;
+
+  const a = form.data;
+  const v = key => a[key] || '—';
+  const av = key => { const x = a[key]; return Array.isArray(x) && x.length ? x.join(', ') : (x || '—'); };
+  const appType = a.appliance_type || '';
+  const issueId = 'diag_issue_' + appType.replace(/[^a-z0-9]/gi,'_').toLowerCase();
+  const mod = DIAG[appType];
+  const selectedIssue = a[issueId];
+  const saved = new Date(form.id).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+
+  let diagRows = `<div class="sum-row"><div class="sum-k">Main Issue</div><div class="sum-v">${esc(v(issueId))}</div></div>`;
+  if (mod && selectedIssue) {
+    if (mod.preQ) mod.preQ.forEach(pq => {
+      const pv = a[pq.id];
+      if (pv) diagRows += `<div class="sum-row"><div class="sum-k">${esc(pq.label)}</div><div class="sum-v">${esc(Array.isArray(pv)?pv.join(', '):pv)}</div></div>`;
+    });
+    if (mod.subQ[selectedIssue]) mod.subQ[selectedIssue].forEach(sq => {
+      const sv = a[sq.id];
+      if (sv && sv !== '') {
+        const shortLabel = sq.label.replace(/ ?[—–-] ?Additional Notes$/,'');
+        diagRows += `<div class="sum-row"><div class="sum-k">${esc(shortLabel)}</div><div class="sum-v">${esc(Array.isArray(sv)?sv.join(', '):sv)}</div></div>`;
+      }
+    });
+  }
+
+  const safeFlagged = Array.isArray(a.safety_concerns) && a.safety_concerns.length > 0 && !a.safety_concerns.every(x => x === 'None of the above');
+
+  document.getElementById('overlayTitle').textContent = `${esc(form.ref)} — ${esc(form.custName)}`;
+  document.getElementById('overlayBody').innerHTML = `
+    <button class="detail-back" onclick="renderSavedList()">← Back to saved forms</button>
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:1rem">Saved on ${saved}</div>
+
+    <div class="sum-section">
+      <div class="sum-sh">Call Information</div>
+      <div class="sum-row"><div class="sum-k">Call Reference</div><div class="sum-v">${esc(v('call_ref'))}</div></div>
+      <div class="sum-row"><div class="sum-k">CSR Name</div><div class="sum-v">${esc(v('csr_name'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Appliance Type</div><div class="sum-v">${esc(v('appliance_type'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Brand / Model</div><div class="sum-v">${esc(v('brand'))} / ${esc(v('model_num'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Serial #</div><div class="sum-v">${esc(v('serial_num'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Unit Age</div><div class="sum-v">${esc(v('unit_age'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Warranty</div><div class="sum-v">${esc(v('warranty'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Main Issue</div><div class="sum-v">${esc(v('main_issue'))}</div></div>
+    </div>
+    <div class="sum-section">
+      <div class="sum-sh">Customer Information</div>
+      <div class="sum-row"><div class="sum-k">Name</div><div class="sum-v">${esc(form.custName)}</div></div>
+      <div class="sum-row"><div class="sum-k">Phone</div><div class="sum-v">${esc(v('cust_phone'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Email</div><div class="sum-v">${esc(v('cust_email'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Address</div><div class="sum-v">${esc(v('cust_addr'))}, ${esc(v('cust_city'))} ${esc(v('cust_zip'))}</div></div>
+    </div>
+    <div class="sum-section">
+      <div class="sum-sh">Safety & Power</div>
+      <div class="sum-row"><div class="sum-k">Safety Concerns</div><div class="sum-v${safeFlagged?' danger':''}">${esc(av('safety_concerns'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Unit plugged in</div><div class="sum-v">${esc(v('power_plugged'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Breaker checked</div><div class="sum-v">${esc(v('power_breaker'))}</div></div>
+      <div class="sum-row"><div class="sum-k">After power event</div><div class="sum-v">${esc(v('power_surge'))}</div></div>
+    </div>
+    <div class="sum-section">
+      <div class="sum-sh">Error Codes</div>
+      <div class="sum-row"><div class="sum-k">Error Status</div><div class="sum-v">${esc(v('error_has_code'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Error Code/Message</div><div class="sum-v">${esc(v('error_code_text'))}</div></div>
+    </div>
+    <div class="sum-section">
+      <div class="sum-sh">Appliance Diagnostic — ${esc(appType)}</div>
+      ${diagRows}
+    </div>
+    <div class="sum-section">
+      <div class="sum-sh">Service History</div>
+      <div class="sum-row"><div class="sum-k">Duration</div><div class="sum-v">${esc(v('gen_duration'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Onset</div><div class="sum-v">${esc(v('gen_onset'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Frequency</div><div class="sum-v">${esc(v('gen_frequency'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Previous tech visit</div><div class="sum-v">${esc(v('gen_prev_tech'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Tech notes</div><div class="sum-v">${esc(v('gen_other'))}</div></div>
+    </div>
+    <div class="sum-section">
+      <div class="sum-sh">Appointment</div>
+      <div class="sum-row"><div class="sum-k">Date</div><div class="sum-v">${esc(v('appt_date'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Time Window</div><div class="sum-v">${esc(v('appt_window'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Technician</div><div class="sum-v">${esc(v('appt_tech'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Additional Services</div><div class="sum-v">${esc(av('add_services'))}</div></div>
+      <div class="sum-row"><div class="sum-k">Final Notes</div><div class="sum-v">${esc(v('final_notes'))}</div></div>
+    </div>
+  `;
+}
+
+function deleteForm(id) {
+  if (!confirm('Delete this saved form? This cannot be undone.')) return;
+  const forms = JSON.parse(localStorage.getItem('intake_forms') || '[]');
+  localStorage.setItem('intake_forms', JSON.stringify(forms.filter(f => f.id !== id)));
+  renderSavedList();
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
